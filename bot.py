@@ -49,26 +49,24 @@ async def check(ctx, *, team: str):
 
         all_outcomes = {}
 
-        # Step 1: build decimal dictionary
         for game in data_decimal:
             for bookmaker in game.get('bookmakers', []):
                 if bookmaker['key'] in ['draftkings', 'pinnacle']:
                     for market in bookmaker.get('markets', []):
                         if market['key'] == 'h2h':
-                            for outcome in market['outcomes']:
+                            for outcome in market.get('outcomes', []):
                                 key = f"{bookmaker['key']}_{outcome['name']}"
                                 all_outcomes[key] = {
                                     'decimal': outcome['price'],
                                     'american': decimal_to_american(outcome['price'])
                                 }
 
-        # Step 2: overlay DraftKings native American odds if available
         for game in data_american:
             for bookmaker in game.get('bookmakers', []):
                 if bookmaker['key'] == 'draftkings':
                     for market in bookmaker.get('markets', []):
                         if market['key'] == 'h2h':
-                            for outcome in market['outcomes']:
+                            for outcome in market.get('outcomes', []):
                                 key = f"draftkings_{outcome['name']}"
                                 if key in all_outcomes:
                                     all_outcomes[key]['american'] = str(outcome['price'])
@@ -160,91 +158,3 @@ async def debuglookup(ctx, *, team: str):
         await ctx.send(f"❌ Exception occurred: {e}")
 
 bot.run(TOKEN)
-
-    url = "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds"
-    params_decimal = {
-        'apiKey': API_KEY,
-        'regions': 'us',
-        'markets': 'h2h',
-        'oddsFormat': 'decimal'
-    }
-
-    try:
-        response = requests.get(url, params=params_decimal)
-        data = response.json()
-        team_lower = team.lower()
-
-        all_outcomes = {}
-
-        for game in data:
-            for bookmaker in game.get('bookmakers', []):
-                if bookmaker['key'] in ['draftkings', 'pinnacle']:
-                    for market in bookmaker.get('markets', []):
-                        if market['key'] == 'h2h':
-                            for outcome in market['outcomes']:
-                                key = f"{bookmaker['key']}_{outcome['name']}"
-                                all_outcomes[key] = outcome['price']
-
-        outcome_teams = set(k.split('_', 1)[1] for k in all_outcomes.keys())
-        match = next((t for t in outcome_teams if team_lower in t.lower()), None)
-
-        if match:
-            dk = all_outcomes.get(f"draftkings_{match}", "N/A")
-            pin = all_outcomes.get(f"pinnacle_{match}", "N/A")
-            msg = (
-                f"🔍 Match: **{match}**\n"
-                f"DraftKings decimal: {dk} → American: {decimal_to_american(dk)}\n"
-                f"Pinnacle decimal: {pin} → American: {decimal_to_american(pin)}"
-            )
-            await ctx.send(msg)
-        else:
-            await ctx.send(f"⚠️ No match found for **{team}**")
-
-    except Exception as e:
-        await ctx.send(f"❌ Error: {e}")
-
-@bot.command(name="debuglookup")
-async def debuglookup(ctx, *, team: str):
-    url = "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds"
-    params = {
-        'apiKey': API_KEY,
-        'regions': 'us',
-        'markets': 'h2h',
-        'oddsFormat': 'decimal'
-    }
-
-    try:
-        response = requests.get(url, params=params)
-        data = response.json()
-
-        if not isinstance(data, list):
-            await ctx.send("❌ API did not return a valid list of games.")
-            return
-
-        team_lower = team.lower()
-        results = []
-
-        for game in data:
-            for bookmaker in game.get("bookmakers", []):
-                if bookmaker["key"] in ["draftkings", "pinnacle"]:
-                    for market in bookmaker.get("markets", []):
-                        if market["key"] == "h2h":
-                            for outcome in market.get("outcomes", []):
-                                name = outcome["name"]
-                                price = outcome["price"]
-                                if team_lower in name.lower():
-                                    converted = decimal_to_american(price)
-                                    results.append(
-                                        f"{bookmaker['title']} (decimal): {price} → American: {converted}"
-                                    )
-
-        if results:
-            header = f"🔍 **Decimal Odds Debug for '{team}'**"
-            await ctx.send(f"{header}
-" + "
-".join(results))
-        else:
-            await ctx.send(f"⚠️ No odds found for **{team}** in decimal format.")
-
-    except Exception as e:
-        await ctx.send(f"❌ Exception occurred: {e}")
