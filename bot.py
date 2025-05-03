@@ -5,6 +5,7 @@ import asyncio
 from chart_utils import generate_line_chart
 from discord.ext import commands
 from dotenv import load_dotenv
+from difflib import get_close_matches
 
 load_dotenv()
 
