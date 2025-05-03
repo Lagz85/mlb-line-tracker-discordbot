@@ -119,8 +119,6 @@ async def testvalue(ctx):
 
 bot.run(TOKEN)
 
-@bot.command(name="debuglookup")
-async def debuglookup(ctx, *, team: str):
     url = "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds"
     params_decimal = {
         'apiKey': API_KEY,
@@ -162,3 +160,49 @@ async def debuglookup(ctx, *, team: str):
 
     except Exception as e:
         await ctx.send(f"❌ Error: {e}")
+
+@bot.command(name="debuglookup")
+async def debuglookup(ctx, *, team: str):
+    url = "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds"
+    params = {
+        'apiKey': API_KEY,
+        'regions': 'us',
+        'markets': 'h2h',
+        'oddsFormat': 'decimal'
+    }
+
+    try:
+        response = requests.get(url, params=params)
+        data = response.json()
+
+        if not isinstance(data, list):
+            await ctx.send("❌ API did not return a valid list of games.")
+            return
+
+        team_lower = team.lower()
+        results = []
+
+        for game in data:
+            for bookmaker in game.get("bookmakers", []):
+                if bookmaker["key"] in ["draftkings", "pinnacle"]:
+                    for market in bookmaker.get("markets", []):
+                        if market["key"] == "h2h":
+                            for outcome in market.get("outcomes", []):
+                                name = outcome["name"]
+                                price = outcome["price"]
+                                if team_lower in name.lower():
+                                    converted = decimal_to_american(price)
+                                    results.append(
+                                        f"{bookmaker['title']} (decimal): {price} → American: {converted}"
+                                    )
+
+        if results:
+            header = f"🔍 **Decimal Odds Debug for '{team}'**"
+            await ctx.send(f"{header}
+" + "
+".join(results))
+        else:
+            await ctx.send(f"⚠️ No odds found for **{team}** in decimal format.")
+
+    except Exception as e:
+        await ctx.send(f"❌ Exception occurred: {e}")
