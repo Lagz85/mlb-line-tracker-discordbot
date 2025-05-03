@@ -129,4 +129,35 @@ async def testvalue(ctx):
         file=discord.File(chart_path)
     )
 
+@bot.command(name="listteams")
+async def listteams(ctx):
+    url = "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds"
+    params = {
+        'apiKey': API_KEY,
+        'regions': 'us',
+        'markets': 'h2h',
+        'oddsFormat': 'american'
+    }
+
+    try:
+        response = requests.get(url, params=params)
+        data = response.json()
+
+        seen = set()
+        for game in data:
+            for bookmaker in game.get('bookmakers', []):
+                if bookmaker['key'] in ['draftkings', 'pinnacle']:
+                    for market in bookmaker.get('markets', []):
+                        if market['key'] == 'h2h':
+                            for outcome in market['outcomes']:
+                                seen.add(outcome['name'])
+
+        sorted_names = sorted(seen)
+        message = "**Available Team Names:**
+" + "
+".join(sorted_names)
+        for i in range(0, len(message), 1900):
+            await ctx.send(message[i:i+1900])
+    except Exception as e:
+        await ctx.send(f"❌ Error fetching team names: {e}")
 bot.run(TOKEN)
