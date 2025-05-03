@@ -133,26 +133,40 @@ async def debuglookup(ctx, *, team: str):
             await ctx.send("❌ API did not return a valid list of games.")
             return
 
-        team_lower = team.lower().strip()
-        results = []
-
+        all_outcomes = {}
         for game in data:
             for bookmaker in game.get("bookmakers", []):
                 if bookmaker["key"] in ["draftkings", "pinnacle"]:
                     for market in bookmaker.get("markets", []):
                         if market["key"] == "h2h":
                             for outcome in market.get("outcomes", []):
-                                name = outcome["name"].strip()
+                                name = outcome["name"]
                                 price = outcome["price"]
-                                if name.lower() == team_lower:
-                                    converted = decimal_to_american(price)
-                                    results.append(f"{bookmaker['title']} (decimal): {price} → American: {converted}")
+                                key = f"{bookmaker['title']}__{name}"
+                                all_outcomes[key] = price
+
+        # Build list of all outcome team names
+        team_names = list({key.split("__")[1] for key in all_outcomes})
+        match = get_close_matches(team, team_names, n=1, cutoff=0.5)
+        if not match:
+            await ctx.send(f"⚠️ No close match found for **{team}**")
+            return
+        matched_team = match[0]
+
+        results = []
+        seen_books = set()
+        for key, price in all_outcomes.items():
+            book, outcome_name = key.split("__")
+            if outcome_name == matched_team and book not in seen_books:
+                seen_books.add(book)
+                converted = decimal_to_american(price)
+                results.append(f"{book} (decimal): {price} → American: {converted}")
 
         if results:
-            header = f"🔍 Decimal Odds Debug for '{team}'"
+            header = f"🔍 Decimal Odds Debug for '{matched_team}'"
             await ctx.send(header + "\n" + "\n".join(results))
         else:
-            await ctx.send(f"⚠️ No odds found for **{team}** in decimal format.")
+            await ctx.send(f"⚠️ No odds found for **{matched_team}** in decimal format.")
 
     except Exception as e:
         await ctx.send(f"❌ Exception occurred: {e}")
