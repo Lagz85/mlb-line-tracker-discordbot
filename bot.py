@@ -91,21 +91,32 @@ async def debuglookup(ctx, *, team: str):
                 converted = decimal_to_american(price)
                 results.append(f"{book} (decimal): {price} → American: {converted}")
 
-        msg = []
-        if results:
-            msg.append(f"🔍 **Moneyline for '{matched_team}'**")
-            msg.extend(results)
-        if spread_lines:
-            msg.append("\n**Spread Lines:**")
-            msg.extend(spread_lines)
-        if total_lines:
-            msg.append("\n**Totals (O/U):**")
-            msg.extend(total_lines)
+        chunks = []
 
-        if msg:
-            await ctx.send("\n".join(msg))
-        else:
+        if results:
+            chunks.append("🔍 **Moneyline for '{}':**".format(matched_team))
+            chunks.extend(results)
+        if spread_lines:
+            chunks.append("\n**Spread Lines:**")
+            chunks.extend(spread_lines)
+        if total_lines:
+            chunks.append("\n**Totals (O/U):**")
+            chunks.extend(total_lines)
+
+        if not chunks:
             await ctx.send(f"⚠️ No odds found for **{matched_team}** in decimal format.")
+            return
+
+        # Split into Discord-safe messages under 2000 characters
+        message = ""
+        for line in chunks:
+            if len(message) + len(line) + 1 > 1990:
+                await ctx.send(message)
+                message = line
+            else:
+                message += "\n" + line
+        if message:
+            await ctx.send(message)
 
     except Exception as e:
         await ctx.send(f"❌ Exception occurred: {e}")
