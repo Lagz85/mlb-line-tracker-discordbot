@@ -133,7 +133,7 @@ async def debuglookup(ctx, *, team: str):
             await ctx.send("❌ API did not return a valid list of games.")
             return
 
-        team_lower = team.lower()
+        team_lower = team.lower().strip()
         results = []
 
         for game in data:
@@ -142,9 +142,9 @@ async def debuglookup(ctx, *, team: str):
                     for market in bookmaker.get("markets", []):
                         if market["key"] == "h2h":
                             for outcome in market.get("outcomes", []):
-                                name = outcome["name"]
+                                name = outcome["name"].strip()
                                 price = outcome["price"]
-                                if team_lower in name.lower():
+                                if name.lower() == team_lower:
                                     converted = decimal_to_american(price)
                                     results.append(f"{bookmaker['title']} (decimal): {price} → American: {converted}")
 
