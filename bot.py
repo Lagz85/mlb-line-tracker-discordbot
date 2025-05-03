@@ -148,21 +148,16 @@ async def debuglookup(ctx, *, team: str):
                                 price = outcome["price"]
                                 if team_lower in name.lower():
                                     converted = decimal_to_american(price)
-                                    results.append(
-                                        f"{bookmaker['title']} (decimal): {price} → American: {converted}"
-                                    )
+                                    results.append(f"{bookmaker['title']} (decimal): {price} → American: {converted}")
 
         if results:
-            header = f"🔍 **Decimal Odds Debug for '{team}'**"
-            await ctx.send(f"{header}
-" + "
-".join(results))
+            header = f"🔍 Decimal Odds Debug for '{team}'"
+            await ctx.send(header + "\n" + "\n".join(results))
         else:
             await ctx.send(f"⚠️ No odds found for **{team}** in decimal format.")
 
     except Exception as e:
         await ctx.send(f"❌ Exception occurred: {e}")
-
 
 bot.run(TOKEN)
 
