@@ -53,7 +53,7 @@ async def check_value_spots():
                                 lines[f"{bookmaker['key']}_{team}"] = outcome['price']
 
             for team in [home, away]:
-                for outcome_team in [k.split('_')[1] for k in lines.keys() if team in k]:
+                for outcome_team in [k.split('_', 1)[1] for k in lines.keys() if team in k]:
                     dk = lines.get(f"draftkings_{outcome_team}")
                     pin = lines.get(f"pinnacle_{outcome_team}")
                     if dk is not None and pin is not None and abs(dk - pin) >= 15:
@@ -100,7 +100,7 @@ async def check(ctx, *, team: str):
                                 name = outcome['name']
                                 all_outcomes[f"{bookmaker['key']}_{name}"] = outcome['price']
 
-            outcome_teams = set(name.split('_')[1] for name in all_outcomes.keys())
+            outcome_teams = set(k.split('_', 1)[1] for k in all_outcomes.keys())
             match = next((t for t in outcome_teams if team_lower in t.lower()), None)
             if match:
                 dk = all_outcomes.get(f"draftkings_{match}")
