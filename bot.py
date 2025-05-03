@@ -53,15 +53,16 @@ async def check_value_spots():
                                 lines[f"{bookmaker['key']}_{team}"] = outcome['price']
 
             for team in [home, away]:
-                dk = lines.get(f"draftkings_{team}")
-                pin = lines.get(f"pinnacle_{team}")
-                if dk is not None and pin is not None and abs(dk - pin) >= 15:
-                    chart_path = generate_line_chart(team, dk, pin)
-                    await channel.send(
-                        f"📊 **Value Spot Found:** {team}\n"
-                        f"DraftKings: {dk} | Pinnacle: {pin} | Δ: {abs(dk - pin)}",
-                        file=discord.File(chart_path)
-                    )
+                for outcome_team in [k.split('_')[1] for k in lines.keys() if team in k]:
+                    dk = lines.get(f"draftkings_{outcome_team}")
+                    pin = lines.get(f"pinnacle_{outcome_team}")
+                    if dk is not None and pin is not None and abs(dk - pin) >= 15:
+                        chart_path = generate_line_chart(outcome_team, dk, pin)
+                        await channel.send(
+                            f"📊 **Value Spot Found:** {outcome_team}\n"
+                            f"DraftKings: {dk} | Pinnacle: {pin} | Δ: {abs(dk - pin)}",
+                            file=discord.File(chart_path)
+                        )
     except Exception as e:
         print(f"Error fetching odds: {e}")
 
@@ -90,19 +91,20 @@ async def check(ctx, *, team: str):
         team_lower = team.lower()
 
         for game in data:
-            teams = [game.get('home_team'), game.get('away_team')]
-            match = next((t for t in teams if team_lower in t.lower()), None)
-            if match:
-                lines = {}
-                for bookmaker in game.get('bookmakers', []):
-                    if bookmaker['key'] in ['draftkings', 'pinnacle']:
-                        for market in bookmaker.get('markets', []):
-                            if market['key'] == 'h2h':
-                                for outcome in market['outcomes']:
-                                    lines[f"{bookmaker['key']}_{outcome['name']}"] = outcome['price']
+            all_outcomes = {}
+            for bookmaker in game.get('bookmakers', []):
+                if bookmaker['key'] in ['draftkings', 'pinnacle']:
+                    for market in bookmaker.get('markets', []):
+                        if market['key'] == 'h2h':
+                            for outcome in market['outcomes']:
+                                name = outcome['name']
+                                all_outcomes[f"{bookmaker['key']}_{name}"] = outcome['price']
 
-                dk = lines.get(f"draftkings_{match}")
-                pin = lines.get(f"pinnacle_{match}")
+            outcome_teams = set(name.split('_')[1] for name in all_outcomes.keys())
+            match = next((t for t in outcome_teams if team_lower in t.lower()), None)
+            if match:
+                dk = all_outcomes.get(f"draftkings_{match}")
+                pin = all_outcomes.get(f"pinnacle_{match}")
                 if dk is not None and pin is not None:
                     chart_path = generate_line_chart(match, dk, pin)
                     await ctx.send(
@@ -111,8 +113,7 @@ async def check(ctx, *, team: str):
                         file=discord.File(chart_path)
                     )
                     return
-        teams_today = ", ".join([f"{game['home_team']} vs. {game['away_team']}" for game in data])
-        await ctx.send(f"⚠️ Could not find odds for **{team}**. Today's matchups: {teams_today}")
+        await ctx.send(f"⚠️ Could not find odds for **{team}**.")
     except Exception as e:
         await ctx.send(f"❌ Error fetching odds: {e}")
 
