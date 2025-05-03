@@ -13,6 +13,7 @@ API_KEY = os.getenv("ODDS_API_KEY")
 CHANNEL_ID = int(os.getenv("DISCORD_CHANNEL_ID"))
 
 intents = discord.Intents.default()
+intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
