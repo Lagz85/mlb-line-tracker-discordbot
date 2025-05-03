@@ -39,55 +39,62 @@ async def check(ctx, *, team: str):
     }
 
     try:
-        response_american = requests.get(url, params=params_american).json()
-        response_decimal = requests.get(url, params=params_decimal).json()
+        data_american = requests.get(url, params=params_american).json()
+        data_decimal = requests.get(url, params=params_decimal).json()
         team_lower = team.lower()
 
-        for game in response_american:
-            all_outcomes = {}
+        all_outcomes = {}
+
+        # Step 1: Start with decimal odds (Pinnacle + DK if present)
+        for game in data_decimal:
+            for bookmaker in game.get('bookmakers', []):
+                if bookmaker['key'] in ['draftkings', 'pinnacle']:
+                    for market in bookmaker.get('markets', []):
+                        if market['key'] == 'h2h':
+                            for outcome in market['outcomes']:
+                                key = f"{bookmaker['key']}_{outcome['name']}"
+                                all_outcomes[key] = {
+                                    'decimal': outcome['price'],
+                                    'american': decimal_to_american(outcome['price'])
+                                }
+
+        # Step 2: Overwrite DraftKings odds with native American format (if available)
+        for game in data_american:
             for bookmaker in game.get('bookmakers', []):
                 if bookmaker['key'] == 'draftkings':
                     for market in bookmaker.get('markets', []):
                         if market['key'] == 'h2h':
                             for outcome in market['outcomes']:
-                                all_outcomes[f"draftkings_{outcome['name']}"] = outcome['price']
+                                key = f"draftkings_{outcome['name']}"
+                                if key in all_outcomes:
+                                    all_outcomes[key]['american'] = outcome['price']
 
-        for game in response_decimal:
-            for bookmaker in game.get('bookmakers', []):
-                if bookmaker['key'] == 'pinnacle':
-                    for market in bookmaker.get('markets', []):
-                        if market['key'] == 'h2h':
-                            for outcome in market['outcomes']:
-                                all_outcomes[f"pinnacle_{outcome['name']}"] = decimal_to_american(outcome['price'])
-                                all_outcomes[f"pinnacle_decimal_{outcome['name']}"] = outcome['price']
-
-        outcome_teams = set(k.split('_', 1)[1] for k in all_outcomes if not k.startswith("pinnacle_decimal_"))
+        outcome_teams = set(k.split('_', 1)[1] for k in all_outcomes.keys())
         best_match = next((t for t in outcome_teams if team_lower in t.lower()), None)
 
         if best_match:
-            dk = all_outcomes.get(f"draftkings_{best_match}", "N/A")
-            pin = all_outcomes.get(f"pinnacle_{best_match}", "N/A")
-            dk_decimal = None
-            pin_decimal = all_outcomes.get(f"pinnacle_decimal_{best_match}", None)
+            dk_key = f"draftkings_{best_match}"
+            pin_key = f"pinnacle_{best_match}"
 
-            if isinstance(dk, (int, float, str)) and dk != "N/A":
-                dk_decimal = None  # not tracking DK decimal in this hybrid
+            dk_odds = all_outcomes.get(dk_key, {})
+            pin_odds = all_outcomes.get(pin_key, {})
 
-            if dk != "N/A" and pin != "N/A":
-                chart_path = generate_line_chart(best_match, dk, pin)
-                diff = (
-                    abs(float(pin_decimal) - float(int(dk)/-100 + 1)) if "-" in str(dk)
-                    else abs(float(pin_decimal) - (int(dk.strip("+"))/100 + 1))
-                )
+            dk_val = dk_odds.get('american', 'N/A')
+            pin_val = pin_odds.get('american', 'N/A')
+
+            # Optional: decimal difference if both available
+            if 'decimal' in dk_odds and 'decimal' in pin_odds:
+                diff = abs(dk_odds['decimal'] - pin_odds['decimal'])
+                chart_path = generate_line_chart(best_match, dk_val, pin_val)
                 await ctx.send(
                     f"📊 **Line Check for {best_match}**\n"
-                    f"DraftKings: {dk} | Pinnacle: {pin} | Δ (decimal diff): {diff:.2f}",
+                    f"DraftKings: {dk_val} | Pinnacle: {pin_val} | Δ (decimal): {diff:.2f}",
                     file=discord.File(chart_path)
                 )
             else:
                 await ctx.send(
                     f"📊 **Line Check for {best_match}**\n"
-                    f"DraftKings: {dk} | Pinnacle: {pin} | Δ: N/A"
+                    f"DraftKings: {dk_val} | Pinnacle: {pin_val} | Δ: N/A"
                 )
         else:
             await ctx.send(f"⚠️ Could not find odds for **{team}**.")
