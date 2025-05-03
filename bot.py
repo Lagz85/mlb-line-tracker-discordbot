@@ -118,3 +118,47 @@ async def testvalue(ctx):
     )
 
 bot.run(TOKEN)
+
+@bot.command(name="debuglookup")
+async def debuglookup(ctx, *, team: str):
+    url = "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds"
+    params_decimal = {
+        'apiKey': API_KEY,
+        'regions': 'us',
+        'markets': 'h2h',
+        'oddsFormat': 'decimal'
+    }
+
+    try:
+        response = requests.get(url, params=params_decimal)
+        data = response.json()
+        team_lower = team.lower()
+
+        all_outcomes = {}
+
+        for game in data:
+            for bookmaker in game.get('bookmakers', []):
+                if bookmaker['key'] in ['draftkings', 'pinnacle']:
+                    for market in bookmaker.get('markets', []):
+                        if market['key'] == 'h2h':
+                            for outcome in market['outcomes']:
+                                key = f"{bookmaker['key']}_{outcome['name']}"
+                                all_outcomes[key] = outcome['price']
+
+        outcome_teams = set(k.split('_', 1)[1] for k in all_outcomes.keys())
+        match = next((t for t in outcome_teams if team_lower in t.lower()), None)
+
+        if match:
+            dk = all_outcomes.get(f"draftkings_{match}", "N/A")
+            pin = all_outcomes.get(f"pinnacle_{match}", "N/A")
+            msg = (
+                f"🔍 Match: **{match}**\n"
+                f"DraftKings decimal: {dk} → American: {decimal_to_american(dk)}\n"
+                f"Pinnacle decimal: {pin} → American: {decimal_to_american(pin)}"
+            )
+            await ctx.send(msg)
+        else:
+            await ctx.send(f"⚠️ No match found for **{team}**")
+
+    except Exception as e:
+        await ctx.send(f"❌ Error: {e}")
