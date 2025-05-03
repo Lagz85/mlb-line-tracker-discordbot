@@ -30,13 +30,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 @bot.command(name="check")
 async def check(ctx, *, team: str):
     url = "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds"
-    params_american = {
-        'apiKey': API_KEY,
-        'regions': 'us',
-        'markets': 'h2h',
-        'oddsFormat': 'american'
-    }
-    params_decimal = {
+    params = {
         'apiKey': API_KEY,
         'regions': 'us',
         'markets': 'h2h',
@@ -44,65 +38,55 @@ async def check(ctx, *, team: str):
     }
 
     try:
-        data_american = requests.get(url, params=params_american).json()
-        data_decimal = requests.get(url, params=params_decimal).json()
-        team_lower = team.lower()
+        response = requests.get(url, params=params)
+        data = response.json()
+
+        if not isinstance(data, list):
+            await ctx.send("❌ API did not return a valid list of games.")
+            return
 
         all_outcomes = {}
-
-        for game in data_decimal:
+        for game in data:
             for bookmaker in game.get('bookmakers', []):
                 if bookmaker['key'] in ['draftkings', 'pinnacle']:
                     for market in bookmaker.get('markets', []):
                         if market['key'] == 'h2h':
                             for outcome in market.get('outcomes', []):
-                                key = f"{bookmaker['key']}_{outcome['name']}"
-                                all_outcomes[key] = {
-                                    'decimal': outcome['price'],
-                                    'american': decimal_to_american(outcome['price'])
-                                }
+                                name = outcome['name']
+                                price = outcome['price']
+                                key = f"{bookmaker['key']}__{name}"
+                                all_outcomes[key] = price
 
-        for game in data_american:
-            for bookmaker in game.get('bookmakers', []):
-                if bookmaker['key'] == 'draftkings':
-                    for market in bookmaker.get('markets', []):
-                        if market['key'] == 'h2h':
-                            for outcome in market.get('outcomes', []):
-                                key = f"draftkings_{outcome['name']}"
-                                if key in all_outcomes:
-                                    all_outcomes[key]['american'] = str(outcome['price'])
+        # Match team with fuzzy logic
+        team_names = list({key.split("__")[1] for key in all_outcomes})
+        match = get_close_matches(team, team_names, n=1, cutoff=0.5)
+        if not match:
+            await ctx.send(f"⚠️ No close match found for **{team}**")
+            return
+        matched_team = match[0]
 
-        outcome_teams = set(k.split('_', 1)[1] for k in all_outcomes.keys())
-        best_match = next((t for t in outcome_teams if team_lower in t.lower()), None)
+        dk_decimal = all_outcomes.get(f"draftkings__{matched_team}")
+        pin_decimal = all_outcomes.get(f"pinnacle__{matched_team}")
 
-        if best_match:
-            dk_key = f"draftkings_{best_match}"
-            pin_key = f"pinnacle_{best_match}"
+        dk_val = decimal_to_american(dk_decimal) if dk_decimal else "N/A"
+        pin_val = decimal_to_american(pin_decimal) if pin_decimal else "N/A"
 
-            dk_odds = all_outcomes.get(dk_key, {})
-            pin_odds = all_outcomes.get(pin_key, {})
-
-            dk_val = dk_odds.get('american') or decimal_to_american(dk_odds.get('decimal', 'N/A'))
-            pin_val = pin_odds.get('american') or decimal_to_american(pin_odds.get('decimal', 'N/A'))
-
-            if 'decimal' in dk_odds and 'decimal' in pin_odds:
-                diff = abs(float(dk_odds['decimal']) - float(pin_odds['decimal']))
-                chart_path = generate_line_chart(best_match, dk_val, pin_val)
-                await ctx.send(
-                    f"📊 **Line Check for {best_match}**\n"
-                    f"DraftKings: {dk_val} | Pinnacle: {pin_val} | Δ (decimal): {diff:.2f}",
-                    file=discord.File(chart_path)
-                )
-            else:
-                await ctx.send(
-                    f"📊 **Line Check for {best_match}**\n"
-                    f"DraftKings: {dk_val} | Pinnacle: {pin_val} | Δ: N/A"
-                )
+        if dk_decimal and pin_decimal:
+            diff = abs(float(dk_decimal) - float(pin_decimal))
+            chart_path = generate_line_chart(matched_team, dk_val, pin_val)
+            await ctx.send(
+                f"📊 **Line Check for {matched_team}**\n"
+                f"DraftKings: {dk_val} | Pinnacle: {pin_val} | Δ (decimal): {diff:.2f}",
+                file=discord.File(chart_path)
+            )
         else:
-            await ctx.send(f"⚠️ Could not find odds for **{team}**.")
+            await ctx.send(
+                f"📊 **Line Check for {matched_team}**\n"
+                f"DraftKings: {dk_val} | Pinnacle: {pin_val} | Δ: N/A"
+            )
 
     except Exception as e:
-        await ctx.send(f"❌ Error fetching hybrid odds: {e}")
+        await ctx.send(f"❌ Exception occurred in check: {e}")
 
 @bot.command(name="testvalue")
 async def testvalue(ctx):
