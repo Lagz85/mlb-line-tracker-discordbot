@@ -227,13 +227,15 @@ async def debuglookup(ctx, *, team: str):
             match = next((t for t in outcome_teams if team_lower in t.lower()), None)
 
             if match:
-                msg = f"🔍 Match: **{match}**\n"
                 dk_key = f"draftkings_{match}"
                 pin_key = f"pinnacle_{match}"
                 dk = all_outcomes.get(dk_key, "Not Found")
                 pin = all_outcomes.get(pin_key, "Not Found")
-                msg += f"DraftKings key: `{dk_key}` → {dk}\n"
-                msg += f"Pinnacle key: `{pin_key}` → {pin}"
+                msg = (
+                    f"🔍 Match: **{match}**\n"
+                    f"DraftKings key: `{dk_key}` → `{dk}`\n"
+                    f"Pinnacle key: `{pin_key}` → `{pin}`"
+                )
                 await ctx.send(msg)
                 return
 
