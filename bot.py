@@ -9,17 +9,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def decimal_to_american(decimal_odds):
-    if decimal_odds >= 2:
-        return f"+{int((decimal_odds - 1) * 100)}"
-    else:
-        return f"-{int(100 / (decimal_odds - 1))}"
-
-def format_american(odds):
     try:
-        val = int(odds)
-        return f"+{val}" if val > 0 else str(val)
+        decimal_odds = float(decimal_odds)
+        if decimal_odds >= 2:
+            return f"+{int((decimal_odds - 1) * 100)}"
+        else:
+            return f"-{int(100 / (decimal_odds - 1))}"
     except:
-        return odds
+        return "N/A"
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 API_KEY = os.getenv("ODDS_API_KEY")
@@ -52,7 +49,7 @@ async def check(ctx, *, team: str):
 
         all_outcomes = {}
 
-        # Step 1: Start with decimal odds (Pinnacle + DK if present)
+        # Step 1: build decimal dictionary
         for game in data_decimal:
             for bookmaker in game.get('bookmakers', []):
                 if bookmaker['key'] in ['draftkings', 'pinnacle']:
@@ -65,7 +62,7 @@ async def check(ctx, *, team: str):
                                     'american': decimal_to_american(outcome['price'])
                                 }
 
-        # Step 2: Overwrite DraftKings odds with native American format (if available)
+        # Step 2: overlay DraftKings native American odds if available
         for game in data_american:
             for bookmaker in game.get('bookmakers', []):
                 if bookmaker['key'] == 'draftkings':
@@ -74,7 +71,7 @@ async def check(ctx, *, team: str):
                             for outcome in market['outcomes']:
                                 key = f"draftkings_{outcome['name']}"
                                 if key in all_outcomes:
-                                    all_outcomes[key]['american'] = format_american(outcome['price'])
+                                    all_outcomes[key]['american'] = str(outcome['price'])
 
         outcome_teams = set(k.split('_', 1)[1] for k in all_outcomes.keys())
         best_match = next((t for t in outcome_teams if team_lower in t.lower()), None)
@@ -86,11 +83,11 @@ async def check(ctx, *, team: str):
             dk_odds = all_outcomes.get(dk_key, {})
             pin_odds = all_outcomes.get(pin_key, {})
 
-            dk_val = dk_odds.get('american', 'N/A')
-            pin_val = pin_odds.get('american', 'N/A')
+            dk_val = dk_odds.get('american') or decimal_to_american(dk_odds.get('decimal', 'N/A'))
+            pin_val = pin_odds.get('american') or decimal_to_american(pin_odds.get('decimal', 'N/A'))
 
             if 'decimal' in dk_odds and 'decimal' in pin_odds:
-                diff = abs(dk_odds['decimal'] - pin_odds['decimal'])
+                diff = abs(float(dk_odds['decimal']) - float(pin_odds['decimal']))
                 chart_path = generate_line_chart(best_match, dk_val, pin_val)
                 await ctx.send(
                     f"📊 **Line Check for {best_match}**\n"
@@ -113,10 +110,10 @@ async def testvalue(ctx):
     team = "Test Team"
     dk = -120
     pin = +100
-    chart_path = generate_line_chart(team, format_american(dk), format_american(pin))
+    chart_path = generate_line_chart(team, dk, pin)
     await ctx.send(
         f"📊 **(TEST) Value Spot Found:** {team}\n"
-        f"DraftKings: {format_american(dk)} | Pinnacle: {format_american(pin)} | Δ: {abs(dk - pin)}¢",
+        f"DraftKings: {dk} | Pinnacle: {pin} | Δ: {abs(dk - pin)}¢",
         file=discord.File(chart_path)
     )
 
