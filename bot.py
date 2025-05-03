@@ -100,7 +100,6 @@ async def check(ctx, *, team: str):
                                 name = outcome['name']
                                 all_outcomes[f"{bookmaker['key']}_{name}"] = outcome['price']
 
-            # Find best match from available outcomes
             outcome_teams = set(k.split('_', 1)[1] for k in all_outcomes.keys())
             best_match = next((t for t in outcome_teams if team_lower in t.lower()), None)
 
@@ -131,72 +130,6 @@ async def testvalue(ctx):
         f"DraftKings: {dk} | Pinnacle: {pin} | Δ: {abs(dk - pin)}",
         file=discord.File(chart_path)
     )
-
-@bot.command(name="listteams")
-async def listteams(ctx):
-    url = "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds"
-    params = {
-        'apiKey': API_KEY,
-        'regions': 'us',
-        'markets': 'h2h',
-        'oddsFormat': 'american'
-    }
-
-    try:
-        response = requests.get(url, params=params)
-        data = response.json()
-
-        seen = set()
-        for game in data:
-            for bookmaker in game.get('bookmakers', []):
-                if bookmaker['key'] in ['draftkings', 'pinnacle']:
-                    for market in bookmaker.get('markets', []):
-                        if market['key'] == 'h2h':
-                            for outcome in market['outcomes']:
-                                seen.add(outcome['name'])
-
-        sorted_names = sorted(seen)
-        message_lines = ["**Available Team Names:**"] + list(sorted_names)
-        message = "\n".join(message_lines)
-
-        for i in range(0, len(message), 1900):
-            await ctx.send(message[i:i+1900])
-    except Exception as e:
-        await ctx.send(f"❌ Error fetching team names: {e}")
-
-@bot.command(name="showoutcomes")
-async def showoutcomes(ctx, *, team: str):
-    url = "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds"
-    params = {
-        'apiKey': API_KEY,
-        'regions': 'us',
-        'markets': 'h2h',
-        'oddsFormat': 'american'
-    }
-
-    try:
-        response = requests.get(url, params=params)
-        data = response.json()
-        team_lower = team.lower()
-
-        matches = set()
-        for game in data:
-            for bookmaker in game.get('bookmakers', []):
-                if bookmaker['key'] in ['draftkings', 'pinnacle']:
-                    for market in bookmaker.get('markets', []):
-                        if market['key'] == 'h2h':
-                            for outcome in market['outcomes']:
-                                if team_lower in outcome['name'].lower():
-                                    matches.add(outcome['name'])
-
-        if matches:
-            msg = "**Matching Outcome Names:**\n" + "\n".join(sorted(matches))
-            for i in range(0, len(msg), 1900):
-                await ctx.send(msg[i:i+1900])
-        else:
-            await ctx.send(f"⚠️ No outcome names matched **{team}**.")
-    except Exception as e:
-        await ctx.send(f"❌ Error fetching outcome names: {e}")
 
 @bot.command(name="debuglookup")
 async def debuglookup(ctx, *, team: str):
@@ -243,91 +176,4 @@ async def debuglookup(ctx, *, team: str):
     except Exception as e:
         await ctx.send(f"❌ Error fetching debug info: {e}")
 
-@bot.command(name="debuglookup")
-async def debuglookup(ctx, *, team: str):
-    url = "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds"
-    params = {
-        'apiKey': API_KEY,
-        'regions': 'us',
-        'markets': 'h2h',
-        'oddsFormat': 'american'
-    }
-
-    try:
-        response = requests.get(url, params=params)
-        data = response.json()
-        team_lower = team.lower()
-
-        for game in data:
-            all_outcomes = {}
-            for bookmaker in game.get('bookmakers', []):
-                if bookmaker['key'] in ['draftkings', 'pinnacle']:
-                    for market in bookmaker.get('markets', []):
-                        if market['key'] == 'h2h':
-                            for outcome in market['outcomes']:
-                                name = outcome['name']
-                                all_outcomes[f"{bookmaker['key']}_{name}"] = outcome['price']
-
-            # Match attempt
-            outcome_teams = set(k.split('_', 1)[1] for k in all_outcomes.keys())
-            match = next((t for t in outcome_teams if team_lower in t.lower()), None)
-
-            if match:
-                exists = []
-                dk_key = f"draftkings_{match}"
-                pin_key = f"pinnacle_{match}"
-                if dk_key in all_outcomes:
-                    exists.append(f"✅ Found: {dk_key} = {all_outcomes[dk_key]}")
-                else:
-                    exists.append(f"❌ Missing: {dk_key}")
-                if pin_key in all_outcomes:
-                    exists.append(f"✅ Found: {pin_key} = {all_outcomes[pin_key]}")
-                else:
-                    exists.append(f"❌ Missing: {pin_key}")
-                await ctx.send(f"🔍 Lookup debug for **{match}**:
-" + "\n".join(exists))
-                return
-
-        await ctx.send(f"⚠️ Could not fuzzy match any team to '{team}'.")
-    except Exception as e:
-        await ctx.send(f"❌ Error during debuglookup: {e}")
-
 bot.run(TOKEN)
-
-@bot.command(name="showoutcomes")
-async def showoutcomes(ctx, *, team: str):
-    url = "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds"
-    params = {
-        'apiKey': API_KEY,
-        'regions': 'us',
-        'markets': 'h2h',
-        'oddsFormat': 'american'
-    }
-
-    try:
-        response = requests.get(url, params=params)
-        data = response.json()
-        team_lower = team.lower()
-        matches = []
-
-        for game in data:
-            for bookmaker in game.get('bookmakers', []):
-                if bookmaker['key'] in ['draftkings', 'pinnacle']:
-                    for market in bookmaker.get('markets', []):
-                        if market['key'] == 'h2h':
-                            for outcome in market['outcomes']:
-                                name = outcome['name']
-                                price = outcome['price']
-                                if team_lower in name.lower():
-                                    matches.append(f"{bookmaker['key']} - {name}: {price}")
-
-        if matches:
-            message = "**Matched Outcome Names:**\n" + "\n".join(matches)
-        else:
-            message = f"⚠️ No outcomes matched '{team}' in current odds."
-
-        for i in range(0, len(message), 1900):
-            await ctx.send(message[i:i+1900])
-    except Exception as e:
-        await ctx.send(f"❌ Error fetching outcome names: {e}")
-
