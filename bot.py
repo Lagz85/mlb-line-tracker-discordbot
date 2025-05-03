@@ -100,19 +100,22 @@ async def check(ctx, *, team: str):
                                 name = outcome['name']
                                 all_outcomes[f"{bookmaker['key']}_{name}"] = outcome['price']
 
+            # Find best match from available outcomes
             outcome_teams = set(k.split('_', 1)[1] for k in all_outcomes.keys())
-            match = next((t for t in outcome_teams if team_lower in t.lower()), None)
-            if match:
-                dk = all_outcomes.get(f"draftkings_{match}")
-                pin = all_outcomes.get(f"pinnacle_{match}")
+            best_match = next((t for t in outcome_teams if team_lower in t.lower()), None)
+
+            if best_match:
+                dk = all_outcomes.get(f"draftkings_{best_match}")
+                pin = all_outcomes.get(f"pinnacle_{best_match}")
                 if dk is not None and pin is not None:
-                    chart_path = generate_line_chart(match, dk, pin)
+                    chart_path = generate_line_chart(best_match, dk, pin)
                     await ctx.send(
-                        f"📊 **Line Check for {match}**\n"
+                        f"📊 **Line Check for {best_match}**\n"
                         f"DraftKings: {dk} | Pinnacle: {pin} | Δ: {abs(dk - pin)}",
                         file=discord.File(chart_path)
                     )
                     return
+
         await ctx.send(f"⚠️ Could not find odds for **{team}**.")
     except Exception as e:
         await ctx.send(f"❌ Error fetching odds: {e}")
