@@ -198,6 +198,98 @@ async def showoutcomes(ctx, *, team: str):
     except Exception as e:
         await ctx.send(f"❌ Error fetching outcome names: {e}")
 
+@bot.command(name="debuglookup")
+async def debuglookup(ctx, *, team: str):
+    url = "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds"
+    params = {
+        'apiKey': API_KEY,
+        'regions': 'us',
+        'markets': 'h2h',
+        'oddsFormat': 'american'
+    }
+
+    try:
+        response = requests.get(url, params=params)
+        data = response.json()
+        team_lower = team.lower()
+
+        for game in data:
+            all_outcomes = {}
+            for bookmaker in game.get('bookmakers', []):
+                if bookmaker['key'] in ['draftkings', 'pinnacle']:
+                    for market in bookmaker.get('markets', []):
+                        if market['key'] == 'h2h':
+                            for outcome in market['outcomes']:
+                                name = outcome['name']
+                                all_outcomes[f"{bookmaker['key']}_{name}"] = outcome['price']
+
+            outcome_teams = set(k.split('_', 1)[1] for k in all_outcomes.keys())
+            match = next((t for t in outcome_teams if team_lower in t.lower()), None)
+
+            if match:
+                msg = f"🔍 Match: **{match}**\n"
+                dk_key = f"draftkings_{match}"
+                pin_key = f"pinnacle_{match}"
+                dk = all_outcomes.get(dk_key, "Not Found")
+                pin = all_outcomes.get(pin_key, "Not Found")
+                msg += f"DraftKings key: `{dk_key}` → {dk}\n"
+                msg += f"Pinnacle key: `{pin_key}` → {pin}"
+                await ctx.send(msg)
+                return
+
+        await ctx.send(f"⚠️ Could not find fuzzy match for **{team}**.")
+    except Exception as e:
+        await ctx.send(f"❌ Error fetching debug info: {e}")
+
+@bot.command(name="debuglookup")
+async def debuglookup(ctx, *, team: str):
+    url = "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds"
+    params = {
+        'apiKey': API_KEY,
+        'regions': 'us',
+        'markets': 'h2h',
+        'oddsFormat': 'american'
+    }
+
+    try:
+        response = requests.get(url, params=params)
+        data = response.json()
+        team_lower = team.lower()
+
+        for game in data:
+            all_outcomes = {}
+            for bookmaker in game.get('bookmakers', []):
+                if bookmaker['key'] in ['draftkings', 'pinnacle']:
+                    for market in bookmaker.get('markets', []):
+                        if market['key'] == 'h2h':
+                            for outcome in market['outcomes']:
+                                name = outcome['name']
+                                all_outcomes[f"{bookmaker['key']}_{name}"] = outcome['price']
+
+            # Match attempt
+            outcome_teams = set(k.split('_', 1)[1] for k in all_outcomes.keys())
+            match = next((t for t in outcome_teams if team_lower in t.lower()), None)
+
+            if match:
+                exists = []
+                dk_key = f"draftkings_{match}"
+                pin_key = f"pinnacle_{match}"
+                if dk_key in all_outcomes:
+                    exists.append(f"✅ Found: {dk_key} = {all_outcomes[dk_key]}")
+                else:
+                    exists.append(f"❌ Missing: {dk_key}")
+                if pin_key in all_outcomes:
+                    exists.append(f"✅ Found: {pin_key} = {all_outcomes[pin_key]}")
+                else:
+                    exists.append(f"❌ Missing: {pin_key}")
+                await ctx.send(f"🔍 Lookup debug for **{match}**:
+" + "\n".join(exists))
+                return
+
+        await ctx.send(f"⚠️ Could not fuzzy match any team to '{team}'.")
+    except Exception as e:
+        await ctx.send(f"❌ Error during debuglookup: {e}")
+
 bot.run(TOKEN)
 
 @bot.command(name="showoutcomes")
