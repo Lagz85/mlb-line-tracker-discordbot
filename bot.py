@@ -33,7 +33,7 @@ async def debuglookup(ctx, *, team: str):
     params = {
         'apiKey': API_KEY,
         'regions': 'us,uk,eu',
-        'markets': 'h2h',
+        'markets': 'h2h,spreads,totals',
         'oddsFormat': 'decimal'
     }
 
@@ -45,7 +45,10 @@ async def debuglookup(ctx, *, team: str):
             await ctx.send("❌ API did not return a valid list of games.")
             return
 
-        all_outcomes = {}
+        h2h_outcomes = {}
+        spread_lines = []
+        total_lines = []
+
         for game in data:
             for bookmaker in game.get("bookmakers", []):
                 if bookmaker["title"].lower() in ["draftkings", "pinnacle"]:
@@ -55,9 +58,21 @@ async def debuglookup(ctx, *, team: str):
                                 name = outcome["name"]
                                 price = outcome["price"]
                                 key = f"{bookmaker['title']}__{name}"
-                                all_outcomes[key] = price
+                                h2h_outcomes[key] = price
+                        elif market["key"] == "spreads":
+                            for outcome in market.get("outcomes", []):
+                                name = outcome["name"]
+                                price = outcome["price"]
+                                point = outcome.get("point", "N/A")
+                                spread_lines.append(f"{bookmaker['title']} | {name} {point} → {decimal_to_american(price)}")
+                        elif market["key"] == "totals":
+                            for outcome in market.get("outcomes", []):
+                                name = outcome["name"]
+                                price = outcome["price"]
+                                point = outcome.get("point", "N/A")
+                                total_lines.append(f"{bookmaker['title']} | {name} {point} → {decimal_to_american(price)}")
 
-        team_names = list({key.split("__")[1] for key in all_outcomes})
+        team_names = list({key.split("__")[1] for key in h2h_outcomes})
         team_lower = team.lower()
 
         direct_matches = [name for name in team_names if team_lower in name.lower()]
@@ -69,84 +84,30 @@ async def debuglookup(ctx, *, team: str):
 
         results = []
         seen_books = set()
-        for key, price in all_outcomes.items():
+        for key, price in h2h_outcomes.items():
             book, outcome_name = key.split("__")
             if outcome_name == matched_team and book not in seen_books:
                 seen_books.add(book)
                 converted = decimal_to_american(price)
                 results.append(f"{book} (decimal): {price} → American: {converted}")
 
+        msg = []
         if results:
-            header = f"🔍 Decimal Odds Debug for '{matched_team}'"
-            await ctx.send(header + "\n" + "\n".join(results))
+            msg.append(f"🔍 **Moneyline for '{matched_team}'**")
+            msg.extend(results)
+        if spread_lines:
+            msg.append("\n**Spread Lines:**")
+            msg.extend(spread_lines)
+        if total_lines:
+            msg.append("\n**Totals (O/U):**")
+            msg.extend(total_lines)
+
+        if msg:
+            await ctx.send("\n".join(msg))
         else:
             await ctx.send(f"⚠️ No odds found for **{matched_team}** in decimal format.")
 
     except Exception as e:
         await ctx.send(f"❌ Exception occurred: {e}")
-
-@bot.command(name="check")
-async def check(ctx, *, team: str):
-    url = "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds"
-    params = {
-        'apiKey': API_KEY,
-        'regions': 'us,uk,eu',
-        'markets': 'h2h',
-        'oddsFormat': 'decimal'
-    }
-
-    try:
-        response = requests.get(url, params=params)
-        data = response.json()
-
-        if not isinstance(data, list):
-            await ctx.send("❌ API did not return a valid list of games.")
-            return
-
-        all_outcomes = {}
-        for game in data:
-            for bookmaker in game.get("bookmakers", []):
-                if bookmaker["title"].lower() in ["draftkings", "pinnacle"]:
-                    for market in bookmaker.get("markets", []):
-                        if market["key"] == "h2h":
-                            for outcome in market.get("outcomes", []):
-                                name = outcome["name"]
-                                price = outcome["price"]
-                                key = f"{bookmaker['title']}__{name}"
-                                all_outcomes[key] = price
-
-        team_names = list({key.split("__")[1] for key in all_outcomes})
-        team_lower = team.lower()
-
-        direct_matches = [name for name in team_names if team_lower in name.lower()]
-        match = direct_matches[0] if direct_matches else get_close_matches(team, team_names, n=1, cutoff=0.5)
-        if not match:
-            await ctx.send(f"⚠️ No close match found for **{team}**")
-            return
-        matched_team = match[0] if isinstance(match, list) else match
-
-        dk_decimal = all_outcomes.get(f"DraftKings__{matched_team}")
-        pin_decimal = all_outcomes.get(f"Pinnacle__{matched_team}")
-
-        dk_val = decimal_to_american(dk_decimal) if dk_decimal else "N/A"
-        pin_val = decimal_to_american(pin_decimal) if pin_decimal else "N/A"
-
-        if dk_decimal and pin_decimal:
-            diff = abs(float(dk_decimal) - float(pin_decimal))
-            chart_path = generate_line_chart(matched_team, dk_val, pin_val)
-            await ctx.send(
-                f"📊 **Line Check for {matched_team}**\n"
-                f"DraftKings: {dk_val} | Pinnacle: {pin_val} | Δ (decimal): {diff:.2f}",
-                file=discord.File(chart_path)
-            )
-        else:
-            await ctx.send(
-                f"📊 **Line Check for {matched_team}**\n"
-                f"DraftKings: {dk_val} | Pinnacle: {pin_val} | Δ: N/A"
-            )
-
-    except Exception as e:
-        await ctx.send(f"❌ Exception occurred in check: {e}")
-
 
 bot.run(TOKEN)
