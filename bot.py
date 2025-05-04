@@ -132,6 +132,7 @@ async def on_ready():
 @tasks.loop(minutes=5)
 async def check_value_spots():
     await bot.wait_until_ready()
+    print(f"🔄 Scanning odds for value spots at {datetime.utcnow().isoformat()} UTC")
     channel = bot.get_channel(CHANNEL_ID)
 
     url = "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds"
