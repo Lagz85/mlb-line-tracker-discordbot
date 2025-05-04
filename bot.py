@@ -1,4 +1,3 @@
-# force refresh
 import pytz
 from datetime import datetime
 import discord
@@ -123,6 +122,8 @@ bot.run(TOKEN)
 
 from discord.ext import tasks
 
+from discord.ext import tasks
+
 @bot.event
 async def on_ready():
     print(f"✅ Logged in as {bot.user}")
@@ -171,6 +172,9 @@ async def check_value_spots():
                                         pin_price_away = outcome["price"]
 
             for team in [home, away]:
+                try:
+                    dk = dk_price_home if team == home else dk_price_away
+                    pin = pin_price_home if team == home else pin_price_away
                     if dk and pin:
                         bet_type = "Moneyline"
                         diff = abs(float(pin) - float(dk))
@@ -184,35 +188,7 @@ async def check_value_spots():
                                 f"🕒 Game Time: {game_time_mst}\n"
                                 f"📊 Line Difference: {diff:.2f}"
                             )
-                try:
-                    dk = dk_price_home if team == home else dk_price_away
-                    pin = pin_price_home if team == home else pin_price_away
-                    if dk and pin:
-                        bet_type = "Moneyline"
-                        diff = abs(float(pin) - float(dk))
-                        if diff >= 0.15 and float(pin) > float(dk):
-        f"📈 Pinnacle: {decimal_to_american(pin)}\n"
-        f"🕒 Game Time: {game_time_mst}\n"
-        f"📊 Line Difference: {diff:.2f}"
-    )}\n"
-                                f"📈 Pinnacle: {decimal_to_american(pin)}\n"
-                                f"🕒 Game Time: {game_time_mst}\n"
-                                f"📊 Line Difference: {diff:.2f}"
-                            )}\n"
-                                f"📈 Pinnacle: {decimal_to_american(pin)}\n"
-                                f"🕒 Game Time: {game_time_mst}\n"
-                                f"📊 Line Difference: {diff:.2f}"
-                            )}\n"
-                                f"📈 Pinnacle: {decimal_to_american(pin)}\n"
-                                f"🕒 Game Time: {game_time_mst}\n"
-                                f"📊 Line Difference: {diff:.2f}"
-                            )
                 except:
                     continue
-
     except Exception as e:
         print(f"Value check error: {e}")
-            f"📈 Pinnacle: {decimal_to_american(pin)}\n"
-            f"🕒 Game Time: {game_time_mst}\n"
-            f"📊 Line Difference: {diff:.2f}"
-        )
