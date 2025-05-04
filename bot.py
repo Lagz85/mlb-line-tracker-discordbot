@@ -1,3 +1,4 @@
+import pytz
 import discord
 import os
 import requests
@@ -69,10 +70,15 @@ async def check(ctx, *, team: str):
         pin_price = None
         spreads = []
 
-        home = matched_game.get("home_team")
+        start_time_utc = matched_game.get("commence_time")
+    game_dt = datetime.fromisoformat(start_time_utc.replace("Z", "+00:00"))
+    game_dt_phoenix = game_dt.astimezone(pytz.timezone("America/Phoenix"))
+    game_time_str = game_dt_phoenix.strftime("%A, %B %d at %I:%M %p")
+
+    home = matched_game.get("home_team")
         away = matched_game.get("away_team")
 
-        for bookmaker in matched_game.get("bookmakers", []):
+        for bookmaker in [b for b in matched_game.get("bookmakers", []) if "draftkings" in b["title"].lower() or "pinnacle" in b["title"].lower()]:
             book = bookmaker["title"].lower()
             for market in bookmaker.get("markets", []):
                 if market["key"] == "h2h":
@@ -87,7 +93,7 @@ async def check(ctx, *, team: str):
                         if outcome["name"] == matched_team:
                             spreads.append(f"{book.capitalize()} | {outcome['name']} {outcome.get('point', 'N/A')} → {decimal_to_american(outcome['price'])}")
 
-        header = f"📊 **{away} vs {home}**"
+        header = f"📊 **{away} vs {home}** — {game_time_str} MST"
         dk_val = decimal_to_american(dk_price) if dk_price else "N/A"
         pin_val = decimal_to_american(pin_price) if pin_price else "N/A"
         spread_text = "\n".join(spreads) if spreads else "No spread data available"
