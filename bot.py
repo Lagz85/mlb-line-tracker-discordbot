@@ -64,10 +64,10 @@ async def check(ctx, *, team: str):
                 break
 
         if not matched_team or not matched_game:
-            await ctx.send(f"⚠️ No game found matching **{team}**")
-            return
+        await ctx.send(f"⚠️ No game found matching **{team}**")
+        return
 
-        await ctx.send(f"📚 Bookmakers for this game: {[b['title'] for b in matched_game.get('bookmakers', [])]}")
+    await ctx.send(f"📚 Bookmakers for this game: {[b['title'] for b in matched_game.get('bookmakers', [])]}")
             await ctx.send(f"⚠️ No game found matching **{team}**")
             return
 
@@ -105,12 +105,12 @@ async def check(ctx, *, team: str):
 
         if dk_price and pin_price and bo_price:
             diff = abs(float(dk_price) - float(pin_price))
-            chart_path = generate_line_chart(matched_team, dk_val, pin_val, bo_val) if dk_val != "N/A" and pin_val != "N/A" and bo_val != "N/A" else None
+            chart_path = generate_line_chart(matched_team, dk_val, pin_val, bo_val)
             await ctx.send(
                 f"{header}\n"
                 f"Moneyline for {matched_team}: DraftKings: {dk_val} | Pinnacle: {pin_val} | BetOnline: {bo_val} | Δ (DK vs PIN): {diff:.2f}\n"
                 f"**Spread Lines:**\n{spread_text}",
-                file=discord.File(chart_path) if chart_path else None
+                file=discord.File(chart_path)
             )
         else:
             await ctx.send(
