@@ -191,9 +191,6 @@ async def check_value_spots():
 
     await bot.wait_until_ready()
     print(f"🔄 Scanning odds for value spots at {datetime.utcnow().isoformat()} UTC")
-@bot.event
-@tasks.loop(minutes=5)
-async def check_value_spots():
     await bot.wait_until_ready()
     print(f"🔄 Scanning odds for value spots at {datetime.utcnow().isoformat()} UTC")
     # (value check logic would go here)
@@ -212,9 +209,6 @@ if __name__ == '__main__':
     print("🚦 Executing bot.run(...) now")
     bot.run(DISCORD_TOKEN)
 
-@bot.event
-@bot.event
-async def on_ready():
     print(f"✅ Logged in as {bot.user}")
     print("🕓 Starting value scanning loop every 5 minutes")
     try:
@@ -223,7 +217,14 @@ async def on_ready():
     except Exception as e:
         print(f"🔥 Failed to start value scan loop: {e}")
 
-@bot.event
+    print(f"✅ Logged in as {bot.user}")
+    print("🕓 Starting value scanning loop every 5 minutes")
+    try:
+        check_value_spots.start()
+        print("📡 Value spot scan loop is now active")
+    except Exception as e:
+        print(f"🔥 Failed to start value scan loop: {e}")
+
 @bot.event
 async def on_ready():
     print(f"✅ Logged in as {bot.user}")
