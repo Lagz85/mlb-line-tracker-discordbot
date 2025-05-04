@@ -203,3 +203,10 @@ print("🚀 bot.py loaded and ready to launch")
 if __name__ == '__main__':
     print("🚦 Executing bot.run(...) now")
     bot.run(DISCORD_TOKEN)
+
+@bot.event
+async def on_ready():
+    print(f"✅ Logged in as {bot.user}")
+    print("🕓 Starting value scanning loop every 5 minutes")
+    print("📡 Value spot scan loop is now active")
+    check_value_spots.start()
