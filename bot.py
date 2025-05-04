@@ -2,6 +2,7 @@ import pytz
 from datetime import datetime
 import discord
 import os
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 import requests
 from chart_utils import generate_line_chart
 from discord.ext import commands
