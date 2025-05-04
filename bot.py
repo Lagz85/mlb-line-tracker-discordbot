@@ -1,11 +1,9 @@
 import discord
 import os
 import requests
-import asyncio
 from chart_utils import generate_line_chart
 from discord.ext import commands
 from dotenv import load_dotenv
-from difflib import get_close_matches
 
 load_dotenv()
 
@@ -64,17 +62,11 @@ async def check(ctx, *, team: str):
                 break
 
         if not matched_team or not matched_game:
-    await ctx.send(f"⚠️ No game found matching **{team}**")
-    return
             await ctx.send(f"⚠️ No game found matching **{team}**")
             return
 
-        await ctx.send(f"📚 Bookmakers for this game: {[b['title'] for b in matched_game.get('bookmakers', [])]}")
-
-    # Pull moneyline and spreads for matched team
         dk_price = None
         pin_price = None
-        bo_price = None
         spreads = []
 
         home = matched_game.get("home_team")
@@ -90,8 +82,6 @@ async def check(ctx, *, team: str):
                                 dk_price = outcome["price"]
                             elif book == "pinnacle":
                                 pin_price = outcome["price"]
-                            elif book == "betonline":
-                                bo_price = outcome["price"]
                 elif market["key"] == "spreads":
                     for outcome in market["outcomes"]:
                         if outcome["name"] == matched_team:
@@ -100,22 +90,21 @@ async def check(ctx, *, team: str):
         header = f"📊 **{away} vs {home}**"
         dk_val = decimal_to_american(dk_price) if dk_price else "N/A"
         pin_val = decimal_to_american(pin_price) if pin_price else "N/A"
-        bo_val = decimal_to_american(bo_price) if bo_price else "N/A"
         spread_text = "\n".join(spreads) if spreads else "No spread data available"
 
-        if dk_price and pin_price and bo_price:
+        if dk_price and pin_price:
             diff = abs(float(dk_price) - float(pin_price))
-            chart_path = generate_line_chart(matched_team, dk_val, pin_val, bo_val)
+            chart_path = generate_line_chart(matched_team, dk_val, pin_val)
             await ctx.send(
                 f"{header}\n"
-                f"Moneyline for {matched_team}: DraftKings: {dk_val} | Pinnacle: {pin_val} | BetOnline: {bo_val} | Δ (DK vs PIN): {diff:.2f}\n"
+                f"Moneyline for {matched_team}: DraftKings: {dk_val} | Pinnacle: {pin_val} | Δ: {diff:.2f}\n"
                 f"**Spread Lines:**\n{spread_text}",
                 file=discord.File(chart_path)
             )
         else:
             await ctx.send(
                 f"{header}\n"
-                f"Moneyline for {matched_team}: DraftKings: {dk_val} | Pinnacle: {pin_val} | BetOnline: {bo_val} | Δ: N/A\n"
+                f"Moneyline for {matched_team}: DraftKings: {dk_val} | Pinnacle: {pin_val} | Δ: N/A\n"
                 f"**Spread Lines:**\n{spread_text}"
             )
 
