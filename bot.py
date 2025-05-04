@@ -191,10 +191,15 @@ async def check_value_spots():
 
     await bot.wait_until_ready()
     print(f"🔄 Scanning odds for value spots at {datetime.utcnow().isoformat()} UTC")
+@bot.event
 async def on_ready():
     print(f"✅ Logged in as {bot.user}")
     print("🕓 Starting value scanning loop every 5 minutes")
-    check_value_spots.start()
+    try:
+        check_value_spots.start()
+        print("📡 Value spot scan loop is now active")
+    except Exception as e:
+        print(f"🔥 Failed to start value scan loop: {e}")
 
 print("🚀 bot.py loaded and ready to launch")
 if __name__ == '__main__':
@@ -202,15 +207,23 @@ if __name__ == '__main__':
     bot.run(DISCORD_TOKEN)
 
 @bot.event
-async def on_ready():
-    print(f"✅ Logged in as {bot.user}")
-    print("🕓 Starting value scanning loop every 5 minutes")
-    print("📡 Value spot scan loop is now active")
-    check_value_spots.start()
-
 @bot.event
 async def on_ready():
     print(f"✅ Logged in as {bot.user}")
     print("🕓 Starting value scanning loop every 5 minutes")
-    print("📡 Value spot scan loop is now active")
-    check_value_spots.start()
+    try:
+        check_value_spots.start()
+        print("📡 Value spot scan loop is now active")
+    except Exception as e:
+        print(f"🔥 Failed to start value scan loop: {e}")
+
+@bot.event
+@bot.event
+async def on_ready():
+    print(f"✅ Logged in as {bot.user}")
+    print("🕓 Starting value scanning loop every 5 minutes")
+    try:
+        check_value_spots.start()
+        print("📡 Value spot scan loop is now active")
+    except Exception as e:
+        print(f"🔥 Failed to start value scan loop: {e}")
