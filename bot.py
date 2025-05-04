@@ -119,3 +119,82 @@ async def check(ctx, *, team: str):
         await ctx.send(f"❌ Exception occurred in check: {e}")
 
 bot.run(TOKEN)
+
+from discord.ext import tasks
+
+@bot.event
+async def on_ready():
+    print(f"✅ Logged in as {bot.user}")
+    check_value_spots.start()
+
+@tasks.loop(minutes=5)
+async def check_value_spots():
+    await bot.wait_until_ready()
+    channel = bot.get_channel(CHANNEL_ID)
+
+    url = "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds"
+    params = {
+        'apiKey': API_KEY,
+        'regions': 'us,us2,uk,eu',
+        'markets': 'h2h',
+        'oddsFormat': 'decimal'
+    }
+
+    try:
+        response = requests.get(url, params=params)
+        data = response.json()
+
+        for game in data:
+            home = game.get("home_team")
+            away = game.get("away_team")
+            game_time = datetime.fromisoformat(game.get("commence_time").replace("Z", "+00:00"))
+            game_time_mst = game_time.astimezone(pytz.timezone("America/Phoenix")).strftime("%b %d at %I:%M %p")
+
+            dk_price_home = dk_price_away = pin_price_home = pin_price_away = None
+
+            for bookmaker in game.get("bookmakers", []):
+                book = bookmaker["title"].lower()
+                if "draftkings" in book or "pinnacle" in book:
+                    for market in bookmaker.get("markets", []):
+                        if market["key"] == "h2h":
+                            for outcome in market["outcomes"]:
+                                if "draftkings" in book:
+                                    if outcome["name"] == home:
+                                        dk_price_home = outcome["price"]
+                                    elif outcome["name"] == away:
+                                        dk_price_away = outcome["price"]
+                                elif "pinnacle" in book:
+                                    if outcome["name"] == home:
+                                        pin_price_home = outcome["price"]
+                                    elif outcome["name"] == away:
+                                        pin_price_away = outcome["price"]
+
+            for team in [home, away]:
+                try:
+                    dk = dk_price_home if team == home else dk_price_away
+                    pin = pin_price_home if team == home else pin_price_away
+                    if dk and pin:
+                        diff = abs(float(pin) - float(dk))
+                        if diff >= 0.15 and float(pin) > float(dk):
+                            await channel.send(
+                                f"🚨 VALUE ALERT\n"
+                                f"Team: {team}\n"
+                                f"Bet Type: Moneyline\n"
+                                f"📉 DraftKings: {decimal_to_american(dk)}\n"
+                                f"📈 Pinnacle: {decimal_to_american(pin)}\n"
+                                f"🕒 Game Time: {game_time_mst}\n"
+                                f"📊 Line Difference: {diff:.2f}"
+                            )}\n"
+                                f"📈 Pinnacle: {decimal_to_american(pin)}\n"
+                                f"🕒 Game Time: {game_time_mst}\n"
+                                f"📊 Line Difference: {diff:.2f}"
+                            )}\n"
+                                f"📈 Pinnacle: {decimal_to_american(pin)}\n"
+                                f"🕒 Game Time: {game_time_mst}\n"
+                                f"📊 Line Difference: {diff:.2f}"
+                            )
+                except:
+                    continue
+
+    except Exception as e:
+        print(f"Value check error: {e}")
