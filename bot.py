@@ -67,6 +67,10 @@ async def check(ctx, *, team: str):
             await ctx.send(f"⚠️ No game found matching **{team}**")
             return
 
+        await ctx.send(f"📚 Bookmakers for this game: {[b['title'] for b in matched_game.get('bookmakers', [])]}")
+            await ctx.send(f"⚠️ No game found matching **{team}**")
+            return
+
         # Pull moneyline and spreads for matched team
         dk_price = None
         pin_price = None
@@ -76,9 +80,7 @@ async def check(ctx, *, team: str):
         home = matched_game.get("home_team")
         away = matched_game.get("away_team")
 
-        await ctx.send(f"📚 Bookmakers for this game: {[b['title'] for b in matched_game.get('bookmakers', [])]}")
-
-    for bookmaker in matched_game.get("bookmakers", []):
+        for bookmaker in matched_game.get("bookmakers", []):
             book = bookmaker["title"].lower()
             for market in bookmaker.get("markets", []):
                 if market["key"] == "h2h":
