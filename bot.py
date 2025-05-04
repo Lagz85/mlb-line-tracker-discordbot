@@ -78,9 +78,9 @@ async def check(ctx, *, team: str):
                 if market["key"] == "h2h":
                     for outcome in market["outcomes"]:
                         if outcome["name"] == matched_team:
-                            if book == "draftkings":
+                            if "draftkings" in book:
                                 dk_price = outcome["price"]
-                            elif book == "pinnacle":
+                            elif "pinnacle" in book:
                                 pin_price = outcome["price"]
                 elif market["key"] == "spreads":
                     for outcome in market["outcomes"]:
