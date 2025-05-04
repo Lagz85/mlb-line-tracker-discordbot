@@ -1,4 +1,4 @@
-# temp change: fixed indentation for dk_odds and pin_odds
+# temp change: added !testvalue command
 
 import os
 import discord
@@ -76,5 +76,18 @@ async def on_ready():
     except Exception as e:
         print(f"🔥 Failed to start value scan loop: {e}")
 
+
+@bot.command()
+async def testvalue(ctx):
+    message = (
+        "🚨 VALUE ALERT\n"
+        "Team: Yankees\n"
+        "Bet Type: Moneyline\n"
+        "📉 DraftKings: -110\n"
+        "📈 Pinnacle: -145\n"
+        "🕒 Game Time: May 03 at 07:10 PM\n"
+        "📊 Line Difference: 0.35"
+    )
+    await ctx.send(message)
 print("🚦 Executing bot.run(...) now")
 bot.run(DISCORD_TOKEN)
