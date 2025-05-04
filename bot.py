@@ -1,4 +1,4 @@
-# temp change: replaced if/elif with two separate if statements
+# temp change: fixed indentation for dk_odds and pin_odds
 
 import os
 import discord
@@ -39,12 +39,6 @@ async def check_value_spots():
                     dk_odds = bookmaker['markets'][0]['outcomes']
                 if bookmaker['key'] == 'pinnacle':
                     pin_odds = bookmaker['markets'][0]['outcomes']
-                    dk_odds = bookmaker['markets'][0]['outcomes']
-                    dk_odds = bookmaker['markets'][0]['outcomes']
-                dk_odds = bookmaker['markets'][0]['outcomes']
-                    pin_odds = bookmaker['markets'][0]['outcomes']
-                    pin_odds = bookmaker['markets'][0]['outcomes']
-                pin_odds = bookmaker['markets'][0]['outcomes']
             if not dk_odds or not pin_odds:
                 continue
             try:
@@ -70,14 +64,11 @@ async def check_value_spots():
                 print(f"⚠️ Alert parsing error: {alert_error}")
     except Exception as e:
         print(f"🔥 Error during value scan: {e}")
-    await bot.wait_until_ready()
-    print("👀 check_value_spots loop fired!")
-    # Placeholder for line scanning logic
 
 @bot.event
 async def on_ready():
     print(f"✅ Logged in as {bot.user}")
-    print("🕓 Starting value scanning loop every 5 minutes")
+    print("🕓 Starting value scanning loop every 15 minutes")
     try:
         check_value_spots.start()
         await check_value_spots()
