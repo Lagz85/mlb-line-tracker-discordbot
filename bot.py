@@ -1,4 +1,3 @@
-#temp change to trigger git commit
 import pytz
 from datetime import datetime
 import discord
@@ -119,7 +118,6 @@ async def check(ctx, *, team: str):
     except Exception as e:
         await ctx.send(f"❌ Exception occurred in check: {e}")
 
-bot.run(TOKEN)
 
 from discord.ext import tasks
 
@@ -195,3 +193,8 @@ async def on_ready():
     print(f"✅ Logged in as {bot.user}")
     print("🕓 Starting value scanning loop every 5 minutes")
     check_value_spots.start()
+
+print("🚀 bot.py loaded and ready to launch")
+if __name__ == '__main__':
+    print("🚦 Executing bot.run(...) now")
+    bot.run(DISCORD_TOKEN)
