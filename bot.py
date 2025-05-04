@@ -11,7 +11,7 @@ DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-@tasks.loop(minutes=5)
+@tasks.loop(minutes=15)
 async def check_value_spots():
     await bot.wait_until_ready()
     print("👀 check_value_spots loop fired!")
