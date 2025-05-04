@@ -127,10 +127,13 @@ from discord.ext import tasks
 @bot.event
 async def on_ready():
     print(f"✅ Logged in as {bot.user}")
+    print("🕓 Starting value scanning loop every 5 minutes")
+    check_value_spots.start()
     check_value_spots.start()
 
 @tasks.loop(minutes=5)
 async def check_value_spots():
+    print("📡 Value spot scan loop is now active")
     await bot.wait_until_ready()
     print(f"🔄 Scanning odds for value spots at {datetime.utcnow().isoformat()} UTC")
     channel = bot.get_channel(CHANNEL_ID)
