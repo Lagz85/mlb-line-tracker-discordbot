@@ -71,11 +71,11 @@ async def check(ctx, *, team: str):
         spreads = []
 
         start_time_utc = matched_game.get("commence_time")
-    game_dt = datetime.fromisoformat(start_time_utc.replace("Z", "+00:00"))
-    game_dt_phoenix = game_dt.astimezone(pytz.timezone("America/Phoenix"))
-    game_time_str = game_dt_phoenix.strftime("%A, %B %d at %I:%M %p")
+        game_dt = datetime.fromisoformat(start_time_utc.replace("Z", "+00:00"))
+        game_dt_phoenix = game_dt.astimezone(pytz.timezone("America/Phoenix"))
+        game_time_str = game_dt_phoenix.strftime("%A, %B %d at %I:%M %p")
 
-    home = matched_game.get("home_team")
+        home = matched_game.get("home_team")
         away = matched_game.get("away_team")
 
         for bookmaker in [b for b in matched_game.get("bookmakers", []) if "draftkings" in b["title"].lower() or "pinnacle" in b["title"].lower()]:
@@ -84,9 +84,9 @@ async def check(ctx, *, team: str):
                 if market["key"] == "h2h":
                     for outcome in market["outcomes"]:
                         if outcome["name"] == matched_team:
-                            if "draftkings" in book:
+                            if book == "draftkings":
                                 dk_price = outcome["price"]
-                            elif "pinnacle" in book:
+                            elif book == "pinnacle":
                                 pin_price = outcome["price"]
                 elif market["key"] == "spreads":
                     for outcome in market["outcomes"]:
