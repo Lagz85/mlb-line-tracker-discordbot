@@ -49,33 +49,40 @@ async def debuglookup(ctx, *, team: str):
         spread_lines = []
         total_lines = []
 
-        for game in data:
-            for bookmaker in game.get("bookmakers", []):
-                if bookmaker["title"].lower() in ["draftkings", "pinnacle"]:
-                    for market in bookmaker.get("markets", []):
-                        for outcome in market.get("outcomes", []):
-                            name = outcome["name"]
-                            price = outcome["price"]
-                            point = outcome.get("point", "N/A")
-                            if market["key"] == "h2h":
-                                key = f"{bookmaker['title']}__{name}"
-                                h2h_outcomes[key] = price
-                            elif market["key"] == "spreads":
-                                key = f"{bookmaker['title']}__{name}"
-                                spread_lines.append((key, point, price))
-                            elif market["key"] == "totals":
-                                key = f"{bookmaker['title']}__{name}"
-                                total_lines.append((key, point, price))
-
-        team_names = list({key.split("__")[1] for key in h2h_outcomes})
         team_lower = team.lower()
+        matched_team = None
+        matched_game = None
 
-        direct_matches = [name for name in team_names if team_lower in name.lower()]
-        match = direct_matches[0] if direct_matches else get_close_matches(team, team_names, n=1, cutoff=0.5)
-        if not match:
-            await ctx.send(f"⚠️ No close match found for **{team}**")
+        for game in data:
+            team_names = [game.get("home_team", ""), game.get("away_team", "")]
+            for name in team_names:
+                if team_lower in name.lower():
+                    matched_team = name
+                    matched_game = game
+                    break
+            if matched_team:
+                break
+
+        if not matched_team or not matched_game:
+            await ctx.send(f"⚠️ No game found matching **{team}**")
             return
-        matched_team = match[0] if isinstance(match, list) else match
+
+        # Gather odds only for the matched game
+        for bookmaker in matched_game.get("bookmakers", []):
+            if bookmaker["title"].lower() in ["draftkings", "pinnacle"]:
+                for market in bookmaker.get("markets", []):
+                    for outcome in market.get("outcomes", []):
+                        name = outcome["name"]
+                        price = outcome["price"]
+                        point = outcome.get("point", "N/A")
+                        book = bookmaker["title"]
+                        if market["key"] == "h2h":
+                            h2h_outcomes[f"{book}__{name}"] = price
+                        elif market["key"] == "spreads":
+                            if name == matched_team:
+                                spread_lines.append(f"{book} | {name} {point} → {decimal_to_american(price)}")
+                        elif market["key"] == "totals":
+                            total_lines.append(f"{book} | {name} {point} → {decimal_to_american(price)}")
 
         results = []
         seen_books = set()
@@ -90,24 +97,17 @@ async def debuglookup(ctx, *, team: str):
         if results:
             msg.append(f"🔍 **Moneyline for '{matched_team}':**")
             msg.extend(results)
-
-        spread_filtered = [f"{key.split('__')[0]} | {matched_team} {pt} → {decimal_to_american(p)}"
-                           for key, pt, p in spread_lines if key.endswith(f"__{matched_team}")]
-        if spread_filtered:
+        if spread_lines:
             msg.append("\n**Spread Lines:**")
-            msg.extend(spread_filtered)
-
-        total_filtered = [f"{key.split('__')[0]} | {key.split('__')[1]} {pt} → {decimal_to_american(p)}"
-                          for key, pt, p in total_lines if key.endswith(f"__Over") or key.endswith(f"__Under")]
-        if total_filtered:
+            msg.extend(spread_lines)
+        if total_lines:
             msg.append("\n**Totals (O/U):**")
-            msg.extend(total_filtered)
+            msg.extend(total_lines)
 
         if not msg:
             await ctx.send(f"⚠️ No odds found for **{matched_team}** in decimal format.")
             return
 
-        # Split into Discord-safe chunks
         message = ""
         for line in msg:
             if len(message) + len(line) + 1 > 1990:
