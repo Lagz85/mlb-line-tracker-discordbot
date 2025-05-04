@@ -1,3 +1,4 @@
+# temp change: moved bot.run outside of __main__
 # temp change to trigger git recognition - tasks import added
 import pytz
 from datetime import datetime
@@ -206,9 +207,7 @@ async def on_ready():
         print(f"🔥 Failed to start value scan loop: {e}")
 
 print("🚀 bot.py loaded and ready to launch")
-if __name__ == '__main__':
     print("🚦 Executing bot.run(...) now")
-    bot.run(DISCORD_TOKEN)
 
     print(f"✅ Logged in as {bot.user}")
     print("🕓 Starting value scanning loop every 5 minutes")
@@ -235,3 +234,6 @@ async def on_ready():
         print("📡 Value spot scan loop is now active")
     except Exception as e:
         print(f"🔥 Failed to start value scan loop: {e}")
+
+# 🔁 Auto-start bot on Railway
+bot.run(DISCORD_TOKEN)
