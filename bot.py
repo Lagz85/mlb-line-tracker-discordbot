@@ -190,6 +190,10 @@ async def check_value_spots():
         print(f"Value check error: {e}")
 
 @bot.event
+@tasks.loop(minutes=5)
+async def check_value_spots():
+    await bot.wait_until_ready()
+    print(f"🔄 Scanning odds for value spots at {datetime.utcnow().isoformat()} UTC")
 async def on_ready():
     print(f"✅ Logged in as {bot.user}")
     print("🕓 Starting value scanning loop every 5 minutes")
