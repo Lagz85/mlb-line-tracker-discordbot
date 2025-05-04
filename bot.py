@@ -1,4 +1,4 @@
-# temp change: moved bot.run outside of __main__
+# temp change: fixed indentation for final bot.run print
 # temp change to trigger git recognition - tasks import added
 import pytz
 from datetime import datetime
@@ -207,7 +207,7 @@ async def on_ready():
         print(f"🔥 Failed to start value scan loop: {e}")
 
 print("🚀 bot.py loaded and ready to launch")
-    print("🚦 Executing bot.run(...) now")
+print("🚦 Executing bot.run(...) now")
 
     print(f"✅ Logged in as {bot.user}")
     print("🕓 Starting value scanning loop every 5 minutes")
