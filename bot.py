@@ -177,10 +177,14 @@ async def check_value_spots():
                         diff = abs(float(pin) - float(dk))
                         if diff >= 0.15 and float(pin) > float(dk):
                             await channel.send(
-                                f"🚨 VALUE ALERT\n"
-                                f"Team: {team}\n"
-                                f"Bet Type: Moneyline\n"
-                                f"📉 DraftKings: {decimal_to_american(dk)}\n"
+        f"🚨 VALUE ALERT\n"
+        f"Team: {team}\n"
+        f"Bet Type: Moneyline\n"
+        f"📉 DraftKings: {decimal_to_american(dk)}\n"
+        f"📈 Pinnacle: {decimal_to_american(pin)}\n"
+        f"🕒 Game Time: {game_time_mst}\n"
+        f"📊 Line Difference: {diff:.2f}"
+    )}\n"
                                 f"📈 Pinnacle: {decimal_to_american(pin)}\n"
                                 f"🕒 Game Time: {game_time_mst}\n"
                                 f"📊 Line Difference: {diff:.2f}"
