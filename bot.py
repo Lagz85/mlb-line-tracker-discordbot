@@ -1,4 +1,4 @@
-# temp change: safely skip games missing dk or pin odds
+# temp change: fixed indentation after if/elif block
 
 import os
 import discord
@@ -36,8 +36,10 @@ async def check_value_spots():
             game_time_str = start_time_local.strftime("%b %d at %I:%M %p")
             for bookmaker in game.get("bookmakers", []):
                 if bookmaker['key'] == 'draftkings':
+                    dk_odds = bookmaker['markets'][0]['outcomes']
                 dk_odds = bookmaker['markets'][0]['outcomes']
                 elif bookmaker['key'] == 'pinnacle':
+                    pin_odds = bookmaker['markets'][0]['outcomes']
                 pin_odds = bookmaker['markets'][0]['outcomes']
             if not dk_odds or not pin_odds:
                 continue
