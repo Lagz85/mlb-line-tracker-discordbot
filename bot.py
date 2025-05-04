@@ -174,13 +174,9 @@ async def check_value_spots():
                     dk = dk_price_home if team == home else dk_price_away
                     pin = pin_price_home if team == home else pin_price_away
                     if dk and pin:
+                        bet_type = "Moneyline"
                         diff = abs(float(pin) - float(dk))
                         if diff >= 0.15 and float(pin) > float(dk):
-                            await channel.send(
-        f"🚨 VALUE ALERT\n"
-        f"Team: {team}\n"
-        f"Bet Type: Moneyline\n"
-        f"📉 DraftKings: {decimal_to_american(dk)}\n"
         f"📈 Pinnacle: {decimal_to_american(pin)}\n"
         f"🕒 Game Time: {game_time_mst}\n"
         f"📊 Line Difference: {diff:.2f}"
@@ -202,3 +198,12 @@ async def check_value_spots():
 
     except Exception as e:
         print(f"Value check error: {e}")
+        await channel.send(
+            f"🚨 VALUE ALERT\n"
+            f"Team: {team}\n"
+            f"Bet Type: {bet_type}\n"
+            f"📉 DraftKings: {decimal_to_american(dk)}\n"
+            f"📈 Pinnacle: {decimal_to_american(pin)}\n"
+            f"🕒 Game Time: {game_time_mst}\n"
+            f"📊 Line Difference: {diff:.2f}"
+        )
