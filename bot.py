@@ -36,7 +36,7 @@ async def check(ctx, *, team: str):
     url = "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds"
     params = {
         'apiKey': API_KEY,
-        'regions': 'us,uk,eu',
+        'regions': 'us,us2,uk,eu',
         'markets': 'h2h,spreads',
         'oddsFormat': 'decimal'
     }
@@ -101,12 +101,12 @@ async def check(ctx, *, team: str):
 
         if dk_price and pin_price and bo_price:
             diff = abs(float(dk_price) - float(pin_price))
-            chart_path = generate_line_chart(matched_team, dk_val, pin_val, bo_val)
+            chart_path = generate_line_chart(matched_team, dk_val, pin_val, bo_val) if dk_val != "N/A" and pin_val != "N/A" and bo_val != "N/A" else None
             await ctx.send(
                 f"{header}\n"
                 f"Moneyline for {matched_team}: DraftKings: {dk_val} | Pinnacle: {pin_val} | BetOnline: {bo_val} | Δ (DK vs PIN): {diff:.2f}\n"
                 f"**Spread Lines:**\n{spread_text}",
-                file=discord.File(chart_path)
+                file=discord.File(chart_path) if chart_path else None
             )
         else:
             await ctx.send(
