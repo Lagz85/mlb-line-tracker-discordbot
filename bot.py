@@ -1,4 +1,4 @@
-# temp change: fixed syntax error from orphaned elif
+# temp change: replaced if/elif with two separate if statements
 
 import os
 import discord
@@ -37,9 +37,11 @@ async def check_value_spots():
             for bookmaker in game.get("bookmakers", []):
                 if bookmaker['key'] == 'draftkings':
                     dk_odds = bookmaker['markets'][0]['outcomes']
+                if bookmaker['key'] == 'pinnacle':
+                    pin_odds = bookmaker['markets'][0]['outcomes']
+                    dk_odds = bookmaker['markets'][0]['outcomes']
                     dk_odds = bookmaker['markets'][0]['outcomes']
                 dk_odds = bookmaker['markets'][0]['outcomes']
-                elif bookmaker['key'] == 'pinnacle':
                     pin_odds = bookmaker['markets'][0]['outcomes']
                     pin_odds = bookmaker['markets'][0]['outcomes']
                 pin_odds = bookmaker['markets'][0]['outcomes']
