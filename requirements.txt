@@ -1,2 +1,5 @@
-
+discord.py
 pytz
+requests
+matplotlib
+python-dotenv
