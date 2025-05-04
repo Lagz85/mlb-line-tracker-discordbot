@@ -53,24 +53,19 @@ async def debuglookup(ctx, *, team: str):
             for bookmaker in game.get("bookmakers", []):
                 if bookmaker["title"].lower() in ["draftkings", "pinnacle"]:
                     for market in bookmaker.get("markets", []):
-                        if market["key"] == "h2h":
-                            for outcome in market.get("outcomes", []):
-                                name = outcome["name"]
-                                price = outcome["price"]
+                        for outcome in market.get("outcomes", []):
+                            name = outcome["name"]
+                            price = outcome["price"]
+                            point = outcome.get("point", "N/A")
+                            if market["key"] == "h2h":
                                 key = f"{bookmaker['title']}__{name}"
                                 h2h_outcomes[key] = price
-                        elif market["key"] == "spreads":
-                            for outcome in market.get("outcomes", []):
-                                name = outcome["name"]
-                                price = outcome["price"]
-                                point = outcome.get("point", "N/A")
-                                spread_lines.append(f"{bookmaker['title']} | {name} {point} → {decimal_to_american(price)}")
-                        elif market["key"] == "totals":
-                            for outcome in market.get("outcomes", []):
-                                name = outcome["name"]
-                                price = outcome["price"]
-                                point = outcome.get("point", "N/A")
-                                total_lines.append(f"{bookmaker['title']} | {name} {point} → {decimal_to_american(price)}")
+                            elif market["key"] == "spreads":
+                                key = f"{bookmaker['title']}__{name}"
+                                spread_lines.append((key, point, price))
+                            elif market["key"] == "totals":
+                                key = f"{bookmaker['title']}__{name}"
+                                total_lines.append((key, point, price))
 
         team_names = list({key.split("__")[1] for key in h2h_outcomes})
         team_lower = team.lower()
@@ -91,25 +86,30 @@ async def debuglookup(ctx, *, team: str):
                 converted = decimal_to_american(price)
                 results.append(f"{book} (decimal): {price} → American: {converted}")
 
-        chunks = []
-
+        msg = []
         if results:
-            chunks.append("🔍 **Moneyline for '{}':**".format(matched_team))
-            chunks.extend(results)
-        if spread_lines:
-            chunks.append("\n**Spread Lines:**")
-            chunks.extend(spread_lines)
-        if total_lines:
-            chunks.append("\n**Totals (O/U):**")
-            chunks.extend(total_lines)
+            msg.append(f"🔍 **Moneyline for '{matched_team}':**")
+            msg.extend(results)
 
-        if not chunks:
+        spread_filtered = [f"{key.split('__')[0]} | {matched_team} {pt} → {decimal_to_american(p)}"
+                           for key, pt, p in spread_lines if key.endswith(f"__{matched_team}")]
+        if spread_filtered:
+            msg.append("\n**Spread Lines:**")
+            msg.extend(spread_filtered)
+
+        total_filtered = [f"{key.split('__')[0]} | {key.split('__')[1]} {pt} → {decimal_to_american(p)}"
+                          for key, pt, p in total_lines if key.endswith(f"__Over") or key.endswith(f"__Under")]
+        if total_filtered:
+            msg.append("\n**Totals (O/U):**")
+            msg.extend(total_filtered)
+
+        if not msg:
             await ctx.send(f"⚠️ No odds found for **{matched_team}** in decimal format.")
             return
 
-        # Split into Discord-safe messages under 2000 characters
+        # Split into Discord-safe chunks
         message = ""
-        for line in chunks:
+        for line in msg:
             if len(message) + len(line) + 1 > 1990:
                 await ctx.send(message)
                 message = line
