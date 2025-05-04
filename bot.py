@@ -124,14 +124,6 @@ from discord.ext import tasks
 
 from discord.ext import tasks
 
-@bot.event
-async def on_ready():
-    print(f"✅ Logged in as {bot.user}")
-    print("🕓 Starting value scanning loop every 5 minutes")
-    check_value_spots.start()
-    check_value_spots.start()
-
-@tasks.loop(minutes=5)
 async def check_value_spots():
     print("📡 Value spot scan loop is now active")
     await bot.wait_until_ready()
@@ -196,3 +188,9 @@ async def check_value_spots():
                     continue
     except Exception as e:
         print(f"Value check error: {e}")
+
+@bot.event
+async def on_ready():
+    print(f"✅ Logged in as {bot.user}")
+    print("🕓 Starting value scanning loop every 5 minutes")
+    check_value_spots.start()
