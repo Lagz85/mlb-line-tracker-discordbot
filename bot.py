@@ -66,12 +66,12 @@ async def check(ctx, *, team: str):
         if not matched_team or not matched_game:
     await ctx.send(f"⚠️ No game found matching **{team}**")
     return
-
-    await ctx.send(f"📚 Bookmakers for this game: {[b['title'] for b in matched_game.get('bookmakers', [])]}")
             await ctx.send(f"⚠️ No game found matching **{team}**")
             return
 
-        # Pull moneyline and spreads for matched team
+        await ctx.send(f"📚 Bookmakers for this game: {[b['title'] for b in matched_game.get('bookmakers', [])]}")
+
+    # Pull moneyline and spreads for matched team
         dk_price = None
         pin_price = None
         bo_price = None
