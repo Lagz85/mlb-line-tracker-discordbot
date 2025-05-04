@@ -1,25 +1,32 @@
 import matplotlib.pyplot as plt
-from datetime import datetime
+from datetime import datetime, timedelta
 import random
 
-def generate_line_chart(team, dk_val, pin_val):
+def generate_line_chart(team, dk_val, pin_val, bo_val=None):
     path = f"/tmp/{team.replace(' ', '_')}_line_chart.png"
 
-    # Simulate historical timestamps and odds for demo purposes
-    timestamps = [datetime.now().strftime("%H:%M")]
-    dk_odds = [int(dk_val)] if dk_val.startswith(("-", "+")) else [0]
-    pin_odds = [int(pin_val)] if pin_val.startswith(("-", "+")) else [0]
+    # Use current time and simulate past 4 intervals
+    now = datetime.now()
+    timestamps = [(now - timedelta(minutes=i * 5)).strftime("%H:%M") for i in reversed(range(5))]
 
-    # For visual demo, create a few previous timestamps
-    for i in range(4):
-        timestamps.insert(0, (datetime.now().replace(minute=(datetime.now().minute - (i+1)*5) % 60)).strftime("%H:%M"))
-        dk_odds.insert(0, dk_odds[-1] + random.randint(-5, 5))
-        pin_odds.insert(0, pin_odds[-1] + random.randint(-5, 5))
+    def build_line(start_val):
+        try:
+            base = int(start_val)
+        except:
+            base = 0
+        return [base + random.randint(-5, 5) for _ in range(5)]
 
-    plt.figure(figsize=(6, 4))
+    dk_odds = build_line(dk_val)
+    pin_odds = build_line(pin_val)
+    bo_odds = build_line(bo_val) if bo_val else []
+
+    plt.figure(figsize=(7, 4))
     plt.plot(timestamps, dk_odds, marker='o', label='DraftKings')
     plt.plot(timestamps, pin_odds, marker='o', label='Pinnacle')
-    plt.title(f"{team} Line Movement")
+    if bo_odds:
+        plt.plot(timestamps, bo_odds, marker='o', label='BetOnline')
+
+    plt.title(f"{team} Line Movement (Simulated)")
     plt.xlabel("Time")
     plt.ylabel("Odds (American)")
     plt.grid(True)
